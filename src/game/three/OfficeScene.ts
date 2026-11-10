@@ -98,11 +98,11 @@ export class OfficeScene {
     // Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0c1322);
-    this.scene.fog = new THREE.Fog(0x0c1322, 45, 80);
+    this.scene.fog = new THREE.Fog(0x121820, 55, 110);
 
     // Camera (True 2.5D Isometric Orthographic)
     const aspect = container.clientWidth / (container.clientHeight || 1);
-    const d = 11.5;
+    const d = 16;
     this.camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 500);
     this.camera.position.copy(this.isoOffset);
     this.camera.lookAt(0, 0, 0);
@@ -164,7 +164,7 @@ export class OfficeScene {
 
   private setupLighting() {
     // Ambient light
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.65);
+    const ambientLight = new THREE.AmbientLight(0xf4f7fb, 1.05);
     this.scene.add(ambientLight);
 
     // Hemisphere light
@@ -260,7 +260,7 @@ export class OfficeScene {
 
     // 2. Solid & Glass Architectural Walls with Collision
     const solidWallMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
+      color: 0x3e4856,
       roughness: 0.7,
       metalness: 0.1,
     });
@@ -367,14 +367,21 @@ export class OfficeScene {
     canvas.width = 512;
     canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#0369a1';
+    ctx.fillStyle = '#f8fafc';
     ctx.fillRect(0, 0, 512, 256);
+    ctx.fillStyle = '#0070c0';
+    ctx.beginPath();
+    ctx.roundRect(36, 48, 150, 150, 18);
+    ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 96px "Chakra Petch", sans-serif';
+    ctx.font = 'bold 72px "Chakra Petch", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('SAP', 256, 120);
-    ctx.font = 'bold 26px sans-serif';
-    ctx.fillText('CENTRO DE SUPORTE BRASIL', 256, 185);
+    ctx.fillText('SAP', 111, 145);
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('CENTRO DE', 210, 112);
+    ctx.fillText('SOPORTE', 210, 150);
 
     const logoTexture = new THREE.CanvasTexture(canvas);
     logoTexture.colorSpace = THREE.SRGBColorSpace;
@@ -427,7 +434,7 @@ export class OfficeScene {
     // Tabletop with beveled finish
     const topGeo = new THREE.BoxGeometry(2.5, 0.1, 1.3);
     const topMat = new THREE.MeshStandardMaterial({
-      color: isKeyUser ? 0x1e3a8a : 0xf1f5f9,
+      color: 0xe7d3b0,
       roughness: 0.35,
       metalness: 0.1,
     });
@@ -769,7 +776,7 @@ export class OfficeScene {
     group.add(shoeR);
 
     // Torso (Corporate Royal Blue Button-down shirt with collar)
-    const shirtMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.5 });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: 0x5b6573, roughness: 0.55 });
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.62, 0.32), shirtMat);
     torso.position.y = 0.78;
     torso.castShadow = !this.isSoftwareGl;
@@ -815,7 +822,7 @@ export class OfficeScene {
     group.add(armRight);
 
     // Head (Marcelo's charismatic face)
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xfcd34d, roughness: 0.45 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xe0b48a, roughness: 0.45 });
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 16), skinMat);
     head.position.y = 1.34;
     head.castShadow = !this.isSoftwareGl;
@@ -847,10 +854,11 @@ export class OfficeScene {
     plumbob.position.set(0, 2.3, 0);
     group.add(plumbob);
 
-    // Floating Nametag Billboard: "MARCELO" (Key User · C2C Sustentação)
-    const nametag = createMarceloBillboard('MARCELO', 'Key User · C2C Sustentação');
-    nametag.position.set(0, 1.95, 0);
+    const nametag = createMarceloBillboard('SABASTIAN');
+    nametag.position.set(0, 1.85, 0);
     group.add(nametag);
+
+    plumbob.visible = false;
 
     group.position.copy(this.playerPos);
     this.camTarget.copy(this.playerPos);
@@ -927,22 +935,36 @@ export class OfficeScene {
     canvas.height = 128;
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = hasTicket ? '#f59e0b' : '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(64, 60, 42, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(50, 95);
-    ctx.lineTo(64, 115);
-    ctx.lineTo(78, 95);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 50px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hasTicket ? '!' : '…', 64, 58);
+    if (hasTicket) {
+      ctx.fillStyle = '#f5c518';
+      ctx.beginPath();
+      ctx.moveTo(64, 14);
+      ctx.lineTo(108, 58);
+      ctx.lineTo(64, 102);
+      ctx.lineTo(20, 58);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 48px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', 64, 62);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(14, 28, 100, 52, 18);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(46, 78);
+      ctx.lineTo(58, 104);
+      ctx.lineTo(72, 78);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(46, 54, 8, 0, Math.PI * 2);
+      ctx.arc(70, 54, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;

@@ -3,7 +3,6 @@ import { PlayerStats, Ticket } from '../types.ts';
 import { InteractiveTarget } from '../three/OfficeScene.ts';
 import {
   Briefcase,
-  Coffee,
   Mail,
   Trello,
   Volume2,
@@ -12,10 +11,6 @@ import {
   Activity,
   Award,
   BookOpen,
-  MapPin,
-  Clock,
-  Sparkles,
-  HelpCircle,
   Trophy,
 } from 'lucide-react';
 import { sound } from '../audio.ts';
@@ -68,203 +63,94 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   };
 
   const openTickets = tickets.filter((t) => t.status !== 'closed');
-  const criticalTickets = openTickets.filter((t) => t.assignedPriority === 'P1' || t.suggestedPriority === 'P1');
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 select-none">
-      {/* Top Persistent HUD Bar */}
-      <header className="pointer-events-auto flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-2.5 shadow-2xl backdrop-blur-md">
-        {/* Left: Time & Day & Room */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600/30 p-1.5 rounded-lg border border-blue-500/40 text-blue-400">
-              <Clock className="w-5 h-5 animate-spin-slow" />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                Expediente · {getDayName(stats.day)}
-              </div>
-              <div className="text-xl font-bold font-mono-code text-white flex items-center gap-2">
-                {formatTime(stats.timeMinutes)}
-                {stats.timeMinutes >= 1020 && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-tech">
-                    HORA EXTRA
-                  </span>
-                )}
-              </div>
-            </div>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 sm:p-3 select-none">
+      <header className="pointer-events-auto flex items-center gap-2 overflow-x-auto rounded-2xl border border-slate-700/70 bg-[#121826]/95 px-2 py-1.5 shadow-2xl backdrop-blur-md sm:gap-3 sm:px-3">
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-300 sm:block">
+            Expediente · {getDayName(stats.day)}
           </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 rounded-lg border border-slate-700 text-xs text-slate-300">
-            <MapPin className="w-3.5 h-3.5 text-blue-400" />
-            <span>{currentRoom}</span>
+          <div className="rounded-xl border border-slate-500/70 bg-[#1c2433] px-3 py-1 font-mono-code text-lg font-bold tracking-wide text-white sm:text-xl">
+            {formatTime(stats.timeMinutes)}
+          </div>
+          <div className="rounded-lg bg-[#3b6fd8] px-3 py-1 text-xs font-semibold text-white">
+            {currentRoom}
           </div>
         </div>
 
-        {/* Center: Core Player Stats (Energia, Estresse, Reputação, Conhecimento) */}
-        <div className="flex items-center gap-4 sm:gap-6">
-          {/* Energia com Feedback Visual de Bateria Baixa */}
-          <div
-            className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
-              stats.energy < 25
-                ? 'border border-amber-500/70 bg-amber-950/40 px-2 py-1 rounded-xl shadow-lg shadow-amber-500/20'
-                : 'px-1'
-            }`}
-          >
-            <Zap
-              className={`w-4 h-4 transition-transform ${
-                stats.energy < 25
-                  ? 'text-red-400 animate-energy-critical drop-shadow-[0_0_8px_rgba(239,68,68,0.9)]'
-                  : 'text-amber-400'
-              }`}
-            />
-            <div className="w-full">
-              <div className="flex justify-between text-[11px] font-mono-code">
-                <span className={stats.energy < 25 ? 'text-red-400 font-bold' : 'text-slate-300'}>
-                  {stats.energy < 25 ? 'BATERIA!' : 'ENERGIA'}
-                </span>
-                <span className={stats.energy < 25 ? 'text-red-400 font-bold' : 'text-slate-300'}>
-                  {Math.round(stats.energy)}%
-                </span>
-              </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    stats.energy > 50
-                      ? 'bg-gradient-to-r from-amber-500 to-emerald-400'
-                      : stats.energy > 25
-                      ? 'bg-amber-500'
-                      : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.max(0, Math.min(100, stats.energy))}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Estresse com Pulso Vermelho Intenso e Brilho Crítico */}
-          <div
-            className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
-              stats.stress > 65
-                ? 'animate-stress-card border-2 border-red-500 bg-red-950/60 px-2.5 py-1 rounded-xl shadow-lg shadow-red-500/30'
-                : 'px-1'
-            }`}
-          >
-            <Activity
-              className={`w-4 h-4 transition-transform ${
-                stats.stress > 65
-                  ? 'text-red-500 animate-stress-pulse drop-shadow-[0_0_12px_rgba(239,68,68,1)]'
-                  : stats.stress > 45
-                  ? 'text-amber-400'
-                  : 'text-purple-400'
-              }`}
-            />
-            <div className="w-full">
-              <div className="flex justify-between text-[11px] font-mono-code">
-                <span className={stats.stress > 65 ? 'text-red-300 font-bold animate-pulse' : 'text-slate-300'}>
-                  {stats.stress > 65 ? 'ESTRESSE ALTO!' : 'ESTRESSE'}
-                </span>
-                <span className={stats.stress > 65 ? 'text-red-300 font-bold' : 'text-slate-300'}>
-                  {Math.round(stats.stress)}%
-                </span>
-              </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    stats.stress > 65
-                      ? 'bg-red-500'
-                      : stats.stress > 45
-                      ? 'bg-amber-500'
-                      : 'bg-gradient-to-r from-purple-500 to-indigo-400'
-                  }`}
-                  style={{ width: `${Math.max(0, Math.min(100, stats.stress))}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Reputação */}
-          <div className="hidden md:flex items-center gap-2 min-w-[100px]">
-            <Award className="w-4 h-4 text-sky-400" />
-            <div>
-              <div className="text-[10px] uppercase font-semibold text-slate-400">Reputação</div>
-              <div className="text-sm font-bold text-sky-300 font-mono-code">{stats.reputation}/100</div>
-            </div>
-          </div>
-
-          {/* Conhecimento SAP */}
-          <div className="hidden lg:flex items-center gap-2 min-w-[100px]">
-            <BookOpen className="w-4 h-4 text-emerald-400" />
-            <div>
-              <div className="text-[10px] uppercase font-semibold text-slate-400">SAP Exp</div>
-              <div className="text-sm font-bold text-emerald-300 font-mono-code">{stats.sapKnowledge}/100</div>
-            </div>
-          </div>
+        <div className="mx-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <StatChip
+            label="Energia"
+            value={`${Math.round(stats.energy)}%`}
+            width={stats.energy}
+            iconBg="bg-emerald-500"
+            bar="bg-gradient-to-r from-lime-400 to-emerald-500"
+            icon={<Zap className="h-3.5 w-3.5 text-white" />}
+          />
+          <StatChip
+            label="Estresse"
+            value={`${Math.round(stats.stress)}%`}
+            width={stats.stress}
+            iconBg="bg-fuchsia-500"
+            bar={stats.stress > 65 ? 'bg-red-500' : 'bg-gradient-to-r from-fuchsia-400 to-purple-500'}
+            icon={<Activity className="h-3.5 w-3.5 text-white" />}
+          />
+          <StatChip
+            label="Reputação"
+            value={`${Math.round(stats.reputation)}/100`}
+            width={stats.reputation}
+            iconBg="bg-amber-500"
+            bar="bg-gradient-to-r from-amber-300 to-amber-500"
+            icon={<Award className="h-3.5 w-3.5 text-white" />}
+          />
+          <StatChip
+            label="SAP Exp"
+            value={`${Math.round(stats.sapKnowledge)}/100`}
+            width={stats.sapKnowledge}
+            iconBg="bg-sky-600"
+            bar="bg-sky-400"
+            icon={<BookOpen className="h-3.5 w-3.5 text-white" />}
+          />
         </div>
 
-        {/* Right: Quick actions, Achievements & Sound */}
-        <div className="flex items-center gap-2">
-          {/* Conquistas Corporativas Badge */}
-          <button
-            onClick={() => {
-              sound.playClick();
-              onOpenAchievements();
-            }}
-            title="Ver Selos e Conquistas Corporativas"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
-          >
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Selos C2C</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-900/80 text-[10px] font-mono-code font-bold">
-              {unlockedAchievementsCount}/{totalAchievementsCount}
-            </span>
-          </button>
-
-          {criticalTickets.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-red-950/80 border border-red-500/50 px-2.5 py-1 rounded-lg text-red-300 text-xs font-semibold animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              {criticalTickets.length} P1 Crítico
-            </div>
-          )}
-
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <button
             onClick={() => {
               sound.playClick();
               onOpenHelp();
             }}
-            title="Como Jogar / Ajuda"
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+            title="Como jogar"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 bg-[#1c2433] text-sm font-bold text-white"
           >
-            <HelpCircle className="w-4 h-4" />
+            ?
           </button>
-
           <button
             onClick={onToggleMute}
             title={isMuted ? 'Ativar som' : 'Silenciar'}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 bg-[#1c2433] text-white"
           >
-            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            {isMuted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
           </button>
         </div>
       </header>
 
-      {/* Center Interactive Prompt when near an NPC / Spot */}
-      <div className="flex justify-center items-center my-auto pointer-events-none">
+      <div className="pointer-events-none mt-auto mb-2 flex justify-start px-1">
         {nearTarget && (
-          <div className="pointer-events-auto animate-bounce-subtle bg-slate-900/95 border-2 border-blue-500 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg text-sm font-tech">
+          <div className="pointer-events-auto flex max-w-sm items-center gap-2 rounded-xl border border-blue-500/80 bg-slate-950/90 px-3 py-2 text-white shadow-lg backdrop-blur-md">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold">
               E
             </div>
-            <div>
-              <div className="text-xs text-blue-300 font-medium uppercase tracking-wider">{nearTarget.name}</div>
-              <div className="text-base font-bold text-white">{nearTarget.label}</div>
+            <div className="min-w-0">
+              <div className="truncate text-[10px] font-medium uppercase tracking-wider text-blue-300">{nearTarget.name}</div>
+              <div className="truncate text-sm font-semibold">{nearTarget.label}</div>
             </div>
             <button
               onClick={() => {
                 sound.playClick();
                 onInteract();
               }}
-              className="ml-2 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer"
+              className="shrink-0 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white"
             >
               Interagir
             </button>
@@ -345,3 +231,34 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 };
+
+function StatChip({
+  label,
+  value,
+  width,
+  iconBg,
+  bar,
+  icon,
+}: {
+  label: string;
+  value: string;
+  width: number;
+  iconBg: string;
+  bar: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={`flex h-7 w-7 items-center justify-center rounded-full ${iconBg}`}>{icon}</div>
+      <div className="w-[92px]">
+        <div className="flex items-center justify-between text-[9px] font-semibold uppercase tracking-wide text-slate-200">
+          <span>{label}</span>
+          <span className="font-mono-code normal-case">{value}</span>
+        </div>
+        <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-slate-700">
+          <div className={`h-full ${bar}`} style={{ width: `${Math.max(0, Math.min(100, width))}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
