@@ -60,7 +60,7 @@ export default function App() {
 
   // Proximity & Interaction
   const [nearTarget, setNearTarget] = useState<InteractiveTarget | null>(null);
-  const [currentRoom, setCurrentRoom] = useState<string>('Mesa do Marcelo (C2C)');
+  const [currentRoom, setCurrentRoom] = useState<string>('Sala Principal');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals
@@ -511,7 +511,7 @@ export default function App() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="absolute top-18 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="pointer-events-none absolute bottom-24 left-3 z-30 max-w-sm">
           <div className="bg-slate-900/95 border-2 border-emerald-500/80 text-emerald-200 px-5 py-2.5 rounded-xl shadow-2xl font-tech text-sm font-bold flex items-center gap-2 backdrop-blur-md">
             <span>{toastMessage}</span>
           </div>

@@ -10,13 +10,11 @@ export function createCarpetTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Base corporate dark slate
-  ctx.fillStyle = '#243042';
+  ctx.fillStyle = '#8e959e';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Subtle carpet tile grid (50x50cm tiles)
   const tileSize = 128;
-  ctx.strokeStyle = '#1b2432';
+  ctx.strokeStyle = '#7c848e';
   ctx.lineWidth = 2;
 
   for (let x = 0; x <= 512; x += tileSize) {
@@ -36,7 +34,7 @@ export function createCarpetTexture(): THREE.CanvasTexture {
   const imgData = ctx.getImageData(0, 0, 512, 512);
   const data = imgData.data;
   for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 22;
+    const noise = (Math.random() - 0.5) * 10;
     data[i] = Math.max(0, Math.min(255, data[i] + noise));
     data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
     data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
@@ -340,68 +338,39 @@ export function createC2CBadgeTexture(): THREE.CanvasTexture {
 /**
  * Creates The Sims-style floating nametag billboard for MARCELO (Key User / C2C)
  */
-export function createMarceloBillboard(name: string = 'MARCELO', role: string = 'Key User · C2C Sustentação'): THREE.Sprite {
+export function createMarceloBillboard(name: string = 'SABASTIAN', role: string = ''): THREE.Sprite {
   const canvas = document.createElement('canvas');
-  canvas.width = 420;
-  canvas.height = 150;
+  canvas.width = 320;
+  canvas.height = 96;
   const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, 320, 96);
 
-  ctx.clearRect(0, 0, 420, 150);
-
-  // Background pill
   ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
   ctx.beginPath();
-  ctx.roundRect(16, 12, 388, 126, 26);
+  ctx.roundRect(48, 6, 224, 40, 12);
   ctx.fill();
 
-  // Vibrant C2C Orange & Blue gradient border
-  const grad = ctx.createLinearGradient(16, 12, 404, 138);
-  grad.addColorStop(0, '#ea580c'); // C2C orange
-  grad.addColorStop(0.5, '#38bdf8'); // Sky blue
-  grad.addColorStop(1, '#2563eb'); // SAP blue
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.roundRect(16, 12, 388, 126, 26);
-  ctx.stroke();
-
-  // C2C Badge Chip (Left)
-  ctx.fillStyle = '#ea580c';
-  ctx.beginPath();
-  ctx.roundRect(32, 28, 56, 32, 8);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px "Chakra Petch", sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 22px "Chakra Petch", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('C2C', 60, 50);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 160, 26);
 
-  // Name "MARCELO"
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 38px "Chakra Petch", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(name, 102, 54);
-
-  // Subtitle "KEY USER SAP · SUSTENTAÇÃO"
-  ctx.fillStyle = '#38bdf8';
-  ctx.font = 'bold 15px "JetBrains Mono", monospace';
-  ctx.fillText(role.toUpperCase(), 34, 90);
-
-  // Miniature Sims status bar
-  ctx.fillStyle = '#1e293b';
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
   ctx.beginPath();
-  ctx.roundRect(34, 104, 350, 14, 7);
+  ctx.roundRect(78, 54, 164, 10, 5);
+  ctx.fill();
+  ctx.fillStyle = '#22d3ee';
+  ctx.beginPath();
+  ctx.roundRect(78, 54, 118, 10, 5);
   ctx.fill();
 
-  ctx.fillStyle = '#22c55e';
-  ctx.beginPath();
-  ctx.roundRect(34, 104, 305, 14, 7);
-  ctx.fill();
-
+  void role;
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
   const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(2.6, 0.95, 1);
+  sprite.scale.set(1.7, 0.5, 1);
   return sprite;
 }
 
