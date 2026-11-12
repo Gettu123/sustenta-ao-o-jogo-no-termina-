@@ -1,0 +1,544 @@
+import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
+
+// --- TIPOS E DADOS DO JOGO ---
+type GameMode = 'title' | 'playing' | 'gameover' | 'victory';
+
+interface Ticket {
+  id: string;
+  title: string;
+  requester: string;
+  department: string;
+  priority: 'P1 - Crítico' | 'P2 - Alto' | 'P3 - Médio' | 'P4 - Baixo';
+  description: string;
+  status: 'Novo' | 'Em Análise' | 'Homologação (QAS)' | 'Concluído';
+  system: string;
+}
+
+const INITIAL_TICKETS: Ticket[] = [
+  {
+    id: 'INC-9941',
+    title: 'Erro de Cálculo no eSocial (S-1200)',
+    requester: 'Bruna (Folha)',
+    department: 'RH / Payroll',
+    priority: 'P1 - Crítico',
+    description: 'Divergência na base de cálculo de verbas rescisórias após o último pacote de suporte. O dump ST22 aponta falha na PCR ZPT4.',
+    status: 'Novo',
+    system: 'SAP ERP HCM (PRD)'
+  },
+  {
+    id: 'REQ-8823',
+    title: 'Inclusão de Novo Benefício (Plano Dental)',
+    requester: 'Carlos (Benefícios)',
+    department: 'DP',
+    priority: 'P2 - Alto',
+    description: 'Necessário parametrizar o infotipo 0168 com a nova tabela de descontos retroativos para o fechamento de folha.',
+    status: 'Novo',
+    system: 'SAP SuccessFactors ECP'
+  },
+  {
+    id: 'INC-8710',
+    title: 'Transação SM37 travada com Job em Loop',
+    requester: 'Fábio (Basis)',
+    department: 'TI / Infra',
+    priority: 'P3 - Médio',
+    description: 'O job de background da interface de ponto eletrônico ficou preso em execução contínua esgotando os processos de dialog.',
+    status: 'Novo',
+    system: 'SAP ECC (QAS)'
+  },
+  {
+    id: 'REQ-8502',
+    title: 'Relatório de Custo de Pessoal por Centro de Custo',
+    requester: 'Roberto (Contábil)',
+    department: 'Financeiro',
+    priority: 'P4 - Baixo',
+    description: 'Ajustar layout de saída ALV para somar rubricas de gratificação por projeto especial.',
+    status: 'Novo',
+    system: 'SAP FI/CO'
+  }
+];
+
+export default function App() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [gameMode, setGameMode] = useState<GameMode>('title');
+  const [energy, setEnergy] = useState<number>(85);
+  const [stress, setStress] = useState<number>(15);
+  const [reputation, setReputation] = useState<number>(65);
+  const [sapExp, setSapExp] = useState<number>(45);
+  const [timeStr, setTimeStr] = useState<string>('08:14');
+  const [locationName, setLocationName] = useState<string>('Sala Principal');
+  
+  // Modais e Estados
+  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_TICKETS);
+  const [activeModal, setActiveModal] = useState<'none' | 'tickets' | 'kanban' | 'ticketDetail'>('none');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [notification, setNotification] = useState<string | null>('☕ Expediente iniciado! Bom trabalho, Marcelo.');
+
+  // Game Loop & Three.js setup
+  useEffect(() => {
+    if (gameMode !== 'playing') return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    // --- CENA, CÂMERA E RENDERIZADOR ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1d24);
+
+    const aspect = container.clientWidth / container.clientHeight;
+    const d = 14;
+    const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+    camera.position.set(20, 22, 20);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // --- ILUMINAÇÃO ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    dirLight.position.set(30, 40, 20);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    const dSize = 25;
+    dirLight.shadow.camera.left = -dSize;
+    dirLight.shadow.camera.right = dSize;
+    dirLight.shadow.camera.top = dSize;
+    dirLight.shadow.camera.bottom = -dSize;
+    scene.add(dirLight);
+
+    // --- PISOS DO ESCRITÓRIO ---
+    const createFloor = (width: number, height: number, color: number, x: number, z: number) => {
+      const geom = new THREE.PlaneGeometry(width, height);
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
+      const plane = new THREE.Mesh(geom, mat);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(x, 0, z);
+      plane.receiveShadow = true;
+      scene.add(plane);
+    };
+
+    createFloor(22, 16, 0x2b303c, 0, 0);       // Sala Principal
+    createFloor(14, 12, 0x232731, -12, -8);     // Sala de Reunião
+    createFloor(14, 12, 0x1f232b, 12, -8);      // Data Center
+    createFloor(16, 12, 0x323846, 12, 8);       // Copa & Cafeteria
+
+    // --- PAREDES E COLISÕES ---
+    const walls: { minX: number; maxX: number; minZ: number; maxZ: number }[] = [];
+    const addWall = (x: number, z: number, w: number, d: number) => {
+      const geom = new THREE.BoxGeometry(w, 3, d);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x3d4451, roughness: 0.5, transparent: true, opacity: 0.85 });
+      const wall = new THREE.Mesh(geom, mat);
+      wall.position.set(x, 1.5, z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      scene.add(wall);
+      walls.push({ minX: x - w/2, maxX: x + w/2, minZ: z - d/2, maxZ: z + d/2 });
+    };
+
+    addWall(0, -9, 44, 0.8);
+    addWall(0, 9, 44, 0.8);
+    addWall(-22, 0, 0.8, 18);
+    addWall(22, 0, 0.8, 18);
+
+    // --- CRIAR PERSONAGEM ANIME 3D (MARCELO) ---
+    const marceloGroup = new THREE.Group();
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.4 }); // Camisa Azul C2C
+    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }); // Calça escura
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.5 }); // Tom carismático
+
+    // Tronco
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.5), bodyMat);
+    torso.position.y = 1.1;
+    torso.castShadow = true;
+    marceloGroup.add(torso);
+
+    // Cabeça Estilo Anime 3D
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), skinMat);
+    head.position.y = 1.95;
+    head.castShadow = true;
+    marceloGroup.add(head);
+
+    // Cabelo e Bigode (Traços do Marcelo)
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.58, 16, 16), hairMat);
+    hair.position.set(0, 2.05, -0.05);
+    hair.scale.set(1, 0.8, 1.05);
+    marceloGroup.add(hair);
+
+    const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.15), hairMat);
+    mustache.position.set(0, 1.82, 0.5);
+    marceloGroup.add(mustache);
+
+    // Pernas
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), pantsMat);
+    leftLeg.position.set(-0.2, 0.4, 0);
+    marceloGroup.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), pantsMat);
+    rightLeg.position.set(0.2, 0.4, 0);
+    marceloGroup.add(rightLeg);
+
+    marceloGroup.position.set(0, 0, 2);
+    scene.add(marceloGroup);
+
+    // --- UI FLUTUANTE (NOME + PLUMBOB) ---
+    const createTextSprite = (message: string, color: string) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = color;
+        ctx.roundRect(0, 0, 256, 64, 16);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(message, 128, 32);
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(2.2, 0.55, 1);
+      return sprite;
+    };
+
+    const nameSprite = createTextSprite('MARCELO (KEY USER)', '#1d4ed8');
+    nameSprite.position.set(0, 3.2, 0);
+    marceloGroup.add(nameSprite);
+
+    const plumbob = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.25),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x16a34a, roughness: 0.2 })
+    );
+    plumbob.position.set(0, 2.8, 0);
+    marceloGroup.add(plumbob);
+
+    // --- MOBÍLIA E ESTAÇÕES ---
+    const addDesk = (x: number, z: number) => {
+      const desk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 1.2), new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.5 }));
+      desk.position.set(x, 0.45, z);
+      desk.castShadow = true;
+      desk.receiveShadow = true;
+      scene.add(desk);
+
+      const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.1), new THREE.MeshStandardMaterial({ color: 0x111827, emissive: 0x0284c7, emissiveIntensity: 0.5 }));
+      monitor.position.set(x, 1.2, z - 0.3);
+      scene.add(monitor);
+    };
+
+    addDesk(-6, -3);
+    addDesk(-6, 3);
+    addDesk(6, -3);
+    addDesk(6, 3);
+
+    // --- MOVIMENTO E COLISÃO ---
+    const keys: { [key: string]: boolean } = {};
+    const handleKeyDown = (e: KeyboardEvent) => { keys[e.code] = true; };
+    const handleKeyUp = (e: KeyboardEvent) => { keys[e.code] = false; };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    let posX = 0;
+    let posZ = 2;
+    const speed = 0.08;
+
+    const checkCollision = (newX: number, newZ: number) => {
+      if (newX < -21 || newX > 21 || newZ < -8.5 || newZ > 8.5) return true;
+      for (const w of walls) {
+        if (newX > w.minX - 0.5 && newX < w.maxX + 0.5 && newZ > w.minZ - 0.5 && newZ < w.maxZ + 0.5) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    let animationFrameId: number;
+    let clock = new THREE.Clock();
+
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+      plumbob.position.y = 2.8 + Math.sin(elapsedTime * 3) * 0.1;
+      plumbob.rotation.y += 0.02;
+
+      let dx = 0;
+      let dz = 0;
+      if (keys['KeyW'] || keys['ArrowUp']) dz -= speed;
+      if (keys['KeyS'] || keys['ArrowDown']) dz += speed;
+      if (keys['KeyA'] || keys['ArrowLeft']) dx -= speed;
+      if (keys['KeyD'] || keys['ArrowRight']) dx += speed;
+
+      if (dx !== 0 || dz !== 0) {
+        const nextX = posX + dx;
+        const nextZ = posZ + dz;
+
+        if (!checkCollision(nextX, posZ)) posX = nextX;
+        if (!checkCollision(posX, nextZ)) posZ = nextZ;
+
+        marceloGroup.position.set(posX, 0, posZ);
+        marceloGroup.rotation.y = Math.atan2(dx, dz);
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      if (!container) return;
+      const newAspect = container.clientWidth / container.clientHeight;
+      camera.left = -d * newAspect;
+      camera.right = d * newAspect;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
+      }
+    };
+  }, [gameMode]);
+
+  return (
+    <div className="flex flex-col h-screen w-screen bg-slate-950 text-white select-none overflow-hidden font-sans">
+      {gameMode === 'title' ? (
+        <div className="flex flex-col items-center justify-center flex-1 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-6 text-center">
+          <div className="max-w-2xl bg-slate-900/80 border border-blue-500/30 p-8 rounded-2xl shadow-2xl backdrop-blur-md">
+            <div className="inline-block px-4 py-1 bg-blue-600/30 text-blue-400 border border-blue-500/40 rounded-full text-xs font-semibold mb-4 tracking-wider uppercase">
+              Simulador Corporativo SAP 2.5D · Estilo The Sims & Anime
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-200">
+              Sustentação: O Dia Nunca Termina
+            </h1>
+            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+              Assuma o papel de <strong className="text-blue-400">Marcelo (Key User / SAP)</strong>. Gerencie chamados críticos P1, resolva enigmas técnicos em ambientes SAP e garanta o sucesso do expediente!
+            </p>
+            <button
+              onClick={() => setGameMode('playing')}
+              className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all transform hover:-translate-y-0.5"
+            >
+              Iniciar Expediente
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col flex-1 relative overflow-hidden">
+          {/* HUD SUPERIOR */}
+          <header className="flex items-center justify-between px-6 py-3 bg-slate-900/90 border-b border-slate-800 shadow-md z-10">
+            <div className="flex items-center space-x-6">
+              <div className="flex flex-col">
+                <span className="text-[10px] tracking-widest text-slate-400 font-semibold uppercase">Expediente · Segunda-feira</span>
+                <span className="text-xl font-mono font-bold text-blue-400">{timeStr}</span>
+              </div>
+              <div className="hidden md:flex items-center px-3 py-1 bg-slate-800/80 rounded-lg border border-slate-700 text-xs text-slate-300">
+                📍 {locationName}
+              </div>
+            </div>
+
+            {/* ATRIBUTOS */}
+            <div className="flex items-center space-x-6 text-xs font-medium">
+              <div className="flex flex-col">
+                <div className="flex justify-between mb-1">
+                  <span className="text-emerald-400">Energia</span>
+                  <span className="font-mono">{energy}%</span>
+                </div>
+                <div className="w-28 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${energy}%` }} />
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <div className="flex justify-between mb-1">
+                  <span className="text-purple-400">Estresse</span>
+                  <span className="font-mono">{stress}%</span>
+                </div>
+                <div className="w-28 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${stress}%` }} />
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <div className="flex justify-between mb-1">
+                  <span className="text-amber-400">Reputação</span>
+                  <span className="font-mono">{reputation}/100</span>
+                </div>
+                <div className="w-28 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${reputation}%` }} />
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <div className="flex justify-between mb-1">
+                  <span className="text-cyan-400">SAP XP</span>
+                  <span className="font-mono">{sapExp}/100</span>
+                </div>
+                <div className="w-28 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: `${sapExp}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* AÇÕES RÁPIDAS */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setActiveModal('tickets')}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1"
+              >
+                <span>Fila de Chamados</span>
+                <span className="px-1.5 py-0.2 bg-blue-800 rounded-full text-[10px]">
+                  {tickets.filter(t => t.status === 'Novo').length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveModal('kanban')}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition"
+              >
+                Kanban
+              </button>
+            </div>
+          </header>
+
+          {/* VIEWPORT 3D */}
+          <div ref={containerRef} className="flex-1 relative outline-none" tabIndex={0}>
+            {notification && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-slate-900/95 border border-blue-500/50 text-blue-200 px-5 py-2.5 rounded-xl shadow-2xl text-xs backdrop-blur-md flex items-center space-x-3 z-20">
+                <span>{notification}</span>
+                <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white font-bold">×</button>
+              </div>
+            )}
+          </div>
+
+          {/* RODAPÉ GUIA */}
+          <footer className="py-2 px-6 bg-slate-900/90 border-t border-slate-800 text-center text-xs text-slate-400">
+            WASD / Setas: Movimentar o Marcelo · <strong className="text-slate-200">Colisão ativa com paredes e móveis</strong> · Estilo Anime 3D & The Sims
+          </footer>
+        </div>
+      )}
+
+      {/* MODAL DE CHAMADOS */}
+      {activeModal === 'tickets' && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+              <h2 className="text-lg font-bold text-blue-400">Fila de Chamados · Suporte SAP</h2>
+              <button onClick={() => setActiveModal('none')} className="text-slate-400 hover:text-white text-lg font-bold">×</button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-3 flex-1">
+              {tickets.map(ticket => (
+                <div key={ticket.id} className="p-4 bg-slate-800/60 border border-slate-700/60 rounded-xl hover:border-blue-500/50 transition flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-xs font-mono font-bold text-blue-400">{ticket.id}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${ticket.priority.includes('P1') ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400'}`}>
+                        {ticket.priority}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-white">{ticket.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1">Solicitante: {ticket.requester} · Sistema: {ticket.system}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedTicket(ticket);
+                      setActiveModal('ticketDetail');
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    Atender
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALHE DO CHAMADO */}
+      {activeModal === 'ticketDetail' && selectedTicket && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+              <h2 className="text-lg font-bold text-blue-400">Atendimento Técnico · {selectedTicket.id}</h2>
+              <button onClick={() => setActiveModal('tickets')} className="text-slate-400 hover:text-white text-lg font-bold">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Problema Relatado</span>
+                <h3 className="text-md font-bold text-white mt-0.5">{selectedTicket.title}</h3>
+                <p className="text-sm text-slate-300 mt-2 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 leading-relaxed font-mono text-xs">
+                  {selectedTicket.description}
+                </p>
+              </div>
+
+              <div className="p-3 bg-blue-950/30 border border-blue-500/30 rounded-xl text-xs text-blue-300 leading-relaxed">
+                💡 <strong className="text-white">Dica do Sênior:</strong> Valide o dump ST22, verifique a regra na PCR e garanta o teste em QAS antes de liberar a Ordem de Transporte para PRD!
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  onClick={() => setActiveModal('tickets')}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={() => {
+                    setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'Concluído' } : t));
+                    setSapExp(prev => Math.min(100, prev + 15));
+                    setReputation(prev => Math.min(100, prev + 5));
+                    setNotification(`✅ Chamado ${selectedTicket.id} solucionado com sucesso por Marcelo!`);
+                    setActiveModal('tickets');
+                  }}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition"
+                >
+                  Resolver e Transportar para PRD
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KANBAN */}
+      {activeModal === 'kanban' && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+              <h2 className="text-lg font-bold text-blue-400">Quadro Kanban · Projetos & Melhorias</h2>
+              <button onClick={() => setActiveModal('none')} className="text-slate-400 hover:text-white text-lg font-bold">×</button>
+            </div>
+            <div className="p-6 grid grid-cols-3 gap-4">
+              <div className="bg-slate-800/40 border border-slate-700/60 p-4 rounded-xl">
+                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3">Backlog</h3>
+                <div className="p-3 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">Automação de Folha Mensal</div>
+              </div>
+              <div className="bg-slate-800/40 border border-slate-700/60 p-4 rounded-xl">
+                <h3 className="text-xs font-bold text-blue-400 uppercase mb-3">Em Desenvolvimento</h3>
+                <div className="p-3 bg-slate-800 rounded-lg text-xs text-slate-300 border border-blue-500/40">Validador de eSocial S-1200</div>
+              </div>
+              <div className="bg-slate-800/40 border border-slate-700/60 p-4 rounded-xl">
+                <h3 className="text-xs font-bold text-emerald-400 uppercase mb-3">Concluído</h3>
+                <div className="p-3 bg-slate-800 rounded-lg text-xs text-slate-300 border border-emerald-500/40">Ajuste de Férias Retroativas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

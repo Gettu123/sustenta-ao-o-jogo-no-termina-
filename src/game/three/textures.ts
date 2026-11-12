@@ -10,14 +10,14 @@ export function createCarpetTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Base corporate dark slate
-  ctx.fillStyle = '#243042';
+  // Base corporate dark charcoal carpet (matching reference screenshot)
+  ctx.fillStyle = '#2c3340';
   ctx.fillRect(0, 0, 512, 512);
 
   // Subtle carpet tile grid (50x50cm tiles)
   const tileSize = 128;
-  ctx.strokeStyle = '#1b2432';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#222733';
+  ctx.lineWidth = 2.5;
 
   for (let x = 0; x <= 512; x += tileSize) {
     ctx.beginPath();
@@ -36,7 +36,7 @@ export function createCarpetTexture(): THREE.CanvasTexture {
   const imgData = ctx.getImageData(0, 0, 512, 512);
   const data = imgData.data;
   for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 22;
+    const noise = (Math.random() - 0.5) * 18;
     data[i] = Math.max(0, Math.min(255, data[i] + noise));
     data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
     data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
@@ -338,75 +338,125 @@ export function createC2CBadgeTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Creates The Sims-style floating nametag billboard for MARCELO (Key User / C2C)
+ * Creates The Sims-style floating nametag billboard matching the exact reference style:
+ * Clean dark container, name, avatar icon and cyan status bar.
  */
-export function createMarceloBillboard(name: string = 'MARCELO', role: string = 'Key User · C2C Sustentação'): THREE.Sprite {
+export function createMarceloBillboard(name: string = 'MARCELO', _role: string = 'Key User · C2C'): THREE.Sprite {
   const canvas = document.createElement('canvas');
-  canvas.width = 420;
-  canvas.height = 150;
+  canvas.width = 320;
+  canvas.height = 120;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.clearRect(0, 0, 420, 150);
+  ctx.clearRect(0, 0, 320, 120);
 
-  // Background pill
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  // Background capsule (sleek dark semi-translucent)
+  ctx.fillStyle = 'rgba(17, 24, 39, 0.88)';
   ctx.beginPath();
-  ctx.roundRect(16, 12, 388, 126, 26);
+  ctx.roundRect(10, 8, 300, 104, 18);
   ctx.fill();
 
-  // Vibrant C2C Orange & Blue gradient border
-  const grad = ctx.createLinearGradient(16, 12, 404, 138);
-  grad.addColorStop(0, '#ea580c'); // C2C orange
-  grad.addColorStop(0.5, '#38bdf8'); // Sky blue
-  grad.addColorStop(1, '#2563eb'); // SAP blue
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(75, 85, 99, 0.6)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(16, 12, 388, 126, 26);
+  ctx.roundRect(10, 8, 300, 104, 18);
   ctx.stroke();
 
-  // C2C Badge Chip (Left)
-  ctx.fillStyle = '#ea580c';
-  ctx.beginPath();
-  ctx.roundRect(32, 28, 56, 32, 8);
-  ctx.fill();
+  // Character Name (crisp white, centered, uppercase)
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px "Chakra Petch", sans-serif';
+  ctx.font = 'bold 32px "Chakra Petch", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('C2C', 60, 50);
+  ctx.fillText(name, 160, 48);
 
-  // Name "MARCELO"
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 38px "Chakra Petch", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(name, 102, 54);
-
-  // Subtitle "KEY USER SAP · SUSTENTAÇÃO"
+  // Profile avatar icon on the left (small user head & shoulders)
   ctx.fillStyle = '#38bdf8';
-  ctx.font = 'bold 15px "JetBrains Mono", monospace';
-  ctx.fillText(role.toUpperCase(), 34, 90);
-
-  // Miniature Sims status bar
-  ctx.fillStyle = '#1e293b';
   ctx.beginPath();
-  ctx.roundRect(34, 104, 350, 14, 7);
+  ctx.arc(44, 82, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(44, 102, 14, Math.PI, 0);
   ctx.fill();
 
-  ctx.fillStyle = '#22c55e';
+  // Stamina / Energy bar on the right
+  ctx.fillStyle = '#0f172a';
   ctx.beginPath();
-  ctx.roundRect(34, 104, 305, 14, 7);
+  ctx.roundRect(68, 74, 226, 16, 8);
+  ctx.fill();
+
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(68, 74, 226, 16, 8);
+  ctx.stroke();
+
+  // Gradient cyan-emerald fill (matches screenshot)
+  const barGrad = ctx.createLinearGradient(68, 74, 280, 90);
+  barGrad.addColorStop(0, '#06b6d4');
+  barGrad.addColorStop(1, '#10b981');
+  ctx.fillStyle = barGrad;
+  ctx.beginPath();
+  ctx.roundRect(70, 76, 195, 12, 6);
   ctx.fill();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
   const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(2.6, 0.95, 1);
+  sprite.scale.set(2.4, 0.9, 1);
   return sprite;
 }
 
 // Alias for backwards compatibility
 export const createSabastianBillboard = createMarceloBillboard;
+
+/**
+ * Creates the exact white plaque with blue SAP logo and "CENTRO DE SUPORTE"
+ * as seen in the reference screenshot behind the reception desk.
+ */
+export function createSapCentroSuporteTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  // Crisp white/light grey plaque background with beveled frame
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(6, 6, 500, 244);
+
+  // Inner subtle border
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(14, 14, 484, 228);
+
+  // SAP Blue Trapezoid Logo
+  ctx.fillStyle = '#0284c7';
+  ctx.beginPath();
+  ctx.moveTo(150, 40);
+  ctx.lineTo(362, 40);
+  ctx.lineTo(332, 130);
+  ctx.lineTo(180, 130);
+  ctx.closePath();
+  ctx.fill();
+
+  // SAP Text in Logo
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 74px "Chakra Petch", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SAP', 256, 108);
+
+  // "CENTRO DE SUPORTE" bold corporate dark text
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 36px "Chakra Petch", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('CENTRO DE SUPORTE', 256, 190);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 /**
  * Creates The Sims Plumbob (Rotating Green Diamond)

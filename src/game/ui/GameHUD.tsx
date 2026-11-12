@@ -71,69 +71,60 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const criticalTickets = openTickets.filter((t) => t.assignedPriority === 'P1' || t.suggestedPriority === 'P1');
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 select-none">
-      {/* Top Persistent HUD Bar */}
-      <header className="pointer-events-auto flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-2.5 shadow-2xl backdrop-blur-md">
-        {/* Left: Time & Day & Room */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600/30 p-1.5 rounded-lg border border-blue-500/40 text-blue-400">
-              <Clock className="w-5 h-5 animate-spin-slow" />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                Expediente · {getDayName(stats.day)}
-              </div>
-              <div className="text-xl font-bold font-mono-code text-white flex items-center gap-2">
-                {formatTime(stats.timeMinutes)}
-                {stats.timeMinutes >= 1020 && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-tech">
-                    HORA EXTRA
-                  </span>
-                )}
-              </div>
-            </div>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-3 select-none">
+      {/* Top Persistent HUD Bar (Pixel-Matched to Reference Screenshot) */}
+      <header className="pointer-events-auto flex flex-wrap items-center justify-between gap-2.5 bg-[#161c28]/95 border border-slate-700/80 rounded-2xl px-4 py-2 shadow-2xl backdrop-blur-md">
+        {/* Left: Menu Badge + Digital Clock + Room Tag */}
+        <div className="flex items-center gap-3">
+          {/* Menu button / Expediente */}
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800/90 rounded-xl border border-slate-600/80 text-xs font-bold text-slate-200 uppercase tracking-wider shadow-sm">
+            <span className="text-base leading-none text-slate-400">≡</span>
+            <span>EXPEDIENTE · {getDayName(stats.day).toUpperCase()}</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 rounded-lg border border-slate-700 text-xs text-slate-300">
+          {/* Large Digital Clock (Dark Beveled Glass with Cyan LED Glow) */}
+          <div className="flex items-center gap-2 bg-[#0a0f18] border-2 border-slate-700/90 px-3 py-0.5 rounded-xl shadow-inner">
+            <span className="text-xl font-bold font-mono text-cyan-300 tracking-wider drop-shadow-[0_0_8px_rgba(6,182,212,0.85)]">
+              {formatTime(stats.timeMinutes)}
+            </span>
+          </div>
+
+          {/* Current Room Badge */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-blue-900/60 to-indigo-900/60 border border-blue-500/50 text-xs font-bold text-blue-200 shadow-sm">
             <MapPin className="w-3.5 h-3.5 text-blue-400" />
             <span>{currentRoom}</span>
           </div>
         </div>
 
-        {/* Center: Core Player Stats (Energia, Estresse, Reputação, Conhecimento) */}
-        <div className="flex items-center gap-4 sm:gap-6">
-          {/* Energia com Feedback Visual de Bateria Baixa */}
+        {/* Center: Core Player Stats (Energia, Estresse, Reputação, SAP EXP, Conquistas) */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          {/* ENERGIA (Neon Lime Circle + Green/Yellow Bar) */}
           <div
-            className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
+            className={`flex items-center gap-2.5 bg-slate-900/85 border border-slate-700/80 rounded-2xl px-3 py-1 min-w-[135px] shadow-md transition-all duration-300 ${
               stats.energy < 25
-                ? 'border border-amber-500/70 bg-amber-950/40 px-2 py-1 rounded-xl shadow-lg shadow-amber-500/20'
-                : 'px-1'
+                ? 'animate-energy-critical border-red-500/80 bg-red-950/40 shadow-lg shadow-red-500/20'
+                : ''
             }`}
           >
-            <Zap
-              className={`w-4 h-4 transition-transform ${
-                stats.energy < 25
-                  ? 'text-red-400 animate-energy-critical drop-shadow-[0_0_8px_rgba(239,68,68,0.9)]'
-                  : 'text-amber-400'
-              }`}
-            />
-            <div className="w-full">
-              <div className="flex justify-between text-[11px] font-mono-code">
-                <span className={stats.energy < 25 ? 'text-red-400 font-bold' : 'text-slate-300'}>
-                  {stats.energy < 25 ? 'BATERIA!' : 'ENERGIA'}
+            <div className="w-6 h-6 rounded-full bg-lime-400 flex items-center justify-center shadow-md shadow-lime-500/40 text-slate-950 flex-shrink-0">
+              <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+            </div>
+            <div className="w-full min-w-[70px]">
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                <span className={stats.energy < 25 ? 'text-red-400' : 'text-slate-200'}>
+                  {stats.energy < 25 ? 'BATERIA' : 'ENERGIA'}
                 </span>
-                <span className={stats.energy < 25 ? 'text-red-400 font-bold' : 'text-slate-300'}>
+                <span className={stats.energy < 25 ? 'text-red-400 font-mono' : 'text-lime-300 font-mono'}>
                   {Math.round(stats.energy)}%
                 </span>
               </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/90 mt-0.5">
                 <div
                   className={`h-full transition-all duration-300 ${
                     stats.energy > 50
-                      ? 'bg-gradient-to-r from-amber-500 to-emerald-400'
+                      ? 'bg-gradient-to-r from-emerald-400 via-lime-400 to-yellow-300'
                       : stats.energy > 25
-                      ? 'bg-amber-500'
+                      ? 'bg-amber-400'
                       : 'bg-red-500'
                   }`}
                   style={{ width: `${Math.max(0, Math.min(100, stats.energy))}%` }}
@@ -142,40 +133,34 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
 
-          {/* Estresse com Pulso Vermelho Intenso e Brilho Crítico */}
+          {/* ESTRESSE (Neon Purple Circle + Magenta Bar + Red Alert Pulse) */}
           <div
-            className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
+            className={`flex items-center gap-2.5 bg-slate-900/85 border border-slate-700/80 rounded-2xl px-3 py-1 min-w-[135px] shadow-md transition-all duration-300 ${
               stats.stress > 65
-                ? 'animate-stress-card border-2 border-red-500 bg-red-950/60 px-2.5 py-1 rounded-xl shadow-lg shadow-red-500/30'
-                : 'px-1'
+                ? 'animate-stress-card border-2 border-red-500 bg-red-950/60 shadow-lg shadow-red-500/40'
+                : ''
             }`}
           >
-            <Activity
-              className={`w-4 h-4 transition-transform ${
-                stats.stress > 65
-                  ? 'text-red-500 animate-stress-pulse drop-shadow-[0_0_12px_rgba(239,68,68,1)]'
-                  : stats.stress > 45
-                  ? 'text-amber-400'
-                  : 'text-purple-400'
-              }`}
-            />
-            <div className="w-full">
-              <div className="flex justify-between text-[11px] font-mono-code">
-                <span className={stats.stress > 65 ? 'text-red-300 font-bold animate-pulse' : 'text-slate-300'}>
-                  {stats.stress > 65 ? 'ESTRESSE ALTO!' : 'ESTRESSE'}
+            <div className="w-6 h-6 rounded-full bg-fuchsia-500 flex items-center justify-center shadow-md shadow-fuchsia-500/40 text-white flex-shrink-0">
+              <Activity className={`w-3.5 h-3.5 ${stats.stress > 65 ? 'animate-stress-pulse' : ''}`} />
+            </div>
+            <div className="w-full min-w-[70px]">
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                <span className={stats.stress > 65 ? 'text-red-300 animate-pulse' : 'text-slate-200'}>
+                  {stats.stress > 65 ? 'ESTRESSE ALTO' : 'ESTRESSE'}
                 </span>
-                <span className={stats.stress > 65 ? 'text-red-300 font-bold' : 'text-slate-300'}>
+                <span className={stats.stress > 65 ? 'text-red-300 font-mono' : 'text-purple-300 font-mono'}>
                   {Math.round(stats.stress)}%
                 </span>
               </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/90 mt-0.5">
                 <div
                   className={`h-full transition-all duration-300 ${
                     stats.stress > 65
                       ? 'bg-red-500'
                       : stats.stress > 45
-                      ? 'bg-amber-500'
-                      : 'bg-gradient-to-r from-purple-500 to-indigo-400'
+                      ? 'bg-amber-400'
+                      : 'bg-gradient-to-r from-purple-500 to-fuchsia-400'
                   }`}
                   style={{ width: `${Math.max(0, Math.min(100, stats.stress))}%` }}
                 />
@@ -183,26 +168,30 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
 
-          {/* Reputação */}
-          <div className="hidden md:flex items-center gap-2 min-w-[100px]">
-            <Award className="w-4 h-4 text-sky-400" />
+          {/* REPUTAÇÃO (Golden Circle Medal Badge) */}
+          <div className="hidden sm:flex items-center gap-2 bg-slate-900/85 border border-amber-500/40 rounded-xl px-2.5 py-1 shadow-md">
+            <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shadow-sm flex-shrink-0">
+              <Award className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <div className="text-[10px] uppercase font-semibold text-slate-400">Reputação</div>
-              <div className="text-sm font-bold text-sky-300 font-mono-code">{stats.reputation}/100</div>
+              <div className="text-[9px] uppercase font-bold text-amber-200/80 tracking-wider">REPUTAÇÃO</div>
+              <div className="text-xs font-mono font-bold text-amber-300">{stats.reputation}/100</div>
             </div>
           </div>
 
-          {/* Conhecimento SAP */}
-          <div className="hidden lg:flex items-center gap-2 min-w-[100px]">
-            <BookOpen className="w-4 h-4 text-emerald-400" />
+          {/* SAP EXP (Blue Book Badge) */}
+          <div className="hidden sm:flex items-center gap-2 bg-slate-900/85 border border-blue-500/40 rounded-xl px-2.5 py-1 shadow-md">
+            <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-400 flex items-center justify-center text-blue-300 shadow-sm flex-shrink-0">
+              <BookOpen className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <div className="text-[10px] uppercase font-semibold text-slate-400">SAP Exp</div>
-              <div className="text-sm font-bold text-emerald-300 font-mono-code">{stats.sapKnowledge}/100</div>
+              <div className="text-[9px] uppercase font-bold text-blue-200/80 tracking-wider">SAP EXP</div>
+              <div className="text-xs font-mono font-bold text-blue-300">{stats.sapKnowledge}/100</div>
             </div>
           </div>
         </div>
 
-        {/* Right: Quick actions, Achievements & Sound */}
+        {/* Right: Quick actions, Conquistas & Sound */}
         <div className="flex items-center gap-2">
           {/* Conquistas Corporativas Badge */}
           <button
@@ -211,37 +200,39 @@ export const GameHUD: React.FC<GameHUDProps> = ({
               onOpenAchievements();
             }}
             title="Ver Selos e Conquistas Corporativas"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Selos C2C</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-900/80 text-[10px] font-mono-code font-bold">
+            <span className="hidden lg:inline">Selos C2C</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-amber-900/80 text-[10px] font-mono font-bold">
               {unlockedAchievementsCount}/{totalAchievementsCount}
             </span>
           </button>
 
           {criticalTickets.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-red-950/80 border border-red-500/50 px-2.5 py-1 rounded-lg text-red-300 text-xs font-semibold animate-pulse">
+            <div className="flex items-center gap-1.5 bg-red-950/80 border border-red-500/50 px-2.5 py-1 rounded-xl text-red-300 text-xs font-semibold animate-pulse">
               <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              {criticalTickets.length} P1 Crítico
+              <span>{criticalTickets.length} P1</span>
             </div>
           )}
 
+          {/* Help Button (Rounded Square Dark Box) */}
           <button
             onClick={() => {
               sound.playClick();
               onOpenHelp();
             }}
             title="Como Jogar / Ajuda"
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+            className="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors border border-slate-600/80 flex items-center justify-center cursor-pointer shadow-sm"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
 
+          {/* Sound Toggle (Rounded Square Dark Box) */}
           <button
             onClick={onToggleMute}
             title={isMuted ? 'Ativar som' : 'Silenciar'}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+            className="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors border border-slate-600/80 flex items-center justify-center cursor-pointer shadow-sm"
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
           </button>

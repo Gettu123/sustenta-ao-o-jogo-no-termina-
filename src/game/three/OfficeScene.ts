@@ -12,6 +12,7 @@ import {
   createServerRackTexture,
   createSimsPlumbob,
   createWoodParquetTexture,
+  createSapCentroSuporteTexture,
 } from './textures.ts';
 
 export interface InteractiveTarget {
@@ -295,22 +296,28 @@ export class OfficeScene {
     this.createSolidWall(3, 11, 0.4, 13, 1.4, glassWallMat, 'Divisória Copa');
     // Walkway opening at x = 3, z = 3 to 5
 
-    // 3. Reception Counter with Curvilinear Mesh & Illuminated SAP Sign
+    // 3. Reception Counter with Curvilinear Mesh & Illuminated SAP Centro de Suporte Sign
     this.buildReceptionWithCollision();
 
-    // 4. Detailed Corporate Workstations
+    // 4. Large Circular / Curved Royal Blue Sectional Lounge Sofa (Bottom-Left, matching reference)
+    this.buildCurvedBlueSofaWithCollision(-11, 7);
+
+    // 5. Indoor Tropical Plants in White Ceramic Planters
+    this.buildPottedPlants();
+
+    // 6. Detailed Corporate Workstations
     this.buildDetailedDesks();
 
-    // 5. Server Room with Perforated Cabinets & Blinking Lights
+    // 7. Server Room with Perforated Cabinets & Blinking Lights
     this.buildServerRoomWithCollision();
 
-    // 6. Cafeteria with Coffee Bar, Espresso Machine & Pool Table
+    // 8. Cafeteria with Coffee Bar, Espresso Machine & Pool Table
     this.buildCafeteriaWithCollision();
 
-    // 7. Executive Office & Boardroom
+    // 9. Executive Office & Boardroom
     this.buildMeetingAndManagerWithCollision();
 
-    // 8. Register Interactive Targets
+    // 10. Register Interactive Targets
     this.setupInteractiveSpots();
   }
 
@@ -335,13 +342,13 @@ export class OfficeScene {
   }
 
   private buildReceptionWithCollision() {
-    // Curved Reception Desk (The Sims signature entrance)
+    // Curved Royal Blue Reception Desk (The Sims signature entrance matching reference image)
     const deskGroup = new THREE.Group();
     const deskGeo = new THREE.CylinderGeometry(2.5, 2.5, 1.15, 32, 1, false, 0, Math.PI);
     const deskMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      roughness: 0.3,
-      metalness: 0.25,
+      color: 0x1d4ed8, // Vibrant Royal Blue
+      roughness: 0.35,
+      metalness: 0.2,
     });
     const desk = new THREE.Mesh(deskGeo, deskMat);
     desk.rotation.y = -Math.PI / 2;
@@ -349,40 +356,35 @@ export class OfficeScene {
     desk.castShadow = !this.isSoftwareGl;
     deskGroup.add(desk);
 
-    // Reception inner desk surface
+    // Reception inner desk surface (White Corian/Laminate)
     const innerSurface = new THREE.Mesh(
       new THREE.BoxGeometry(2.8, 0.08, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 })
     );
     innerSurface.position.set(0, 0.85, -9.5);
     deskGroup.add(innerSurface);
+
+    // Receptionist Monitor on top of counter facing back
+    const recMonitor = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.42, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 })
+    );
+    recMonitor.position.set(0, 1.12, -9.4);
+    recMonitor.rotation.y = Math.PI;
+    deskGroup.add(recMonitor);
 
     this.scene.add(deskGroup);
 
     // Register Reception Desk Collision
     this.collisionSystem.addBox(-2.5, 2.5, -10.5, -8.0, 'Balcão de Recepção');
 
-    // Illuminated SAP Billboard
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#0369a1';
-    ctx.fillRect(0, 0, 512, 256);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 96px "Chakra Petch", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('SAP', 256, 120);
-    ctx.font = 'bold 26px sans-serif';
-    ctx.fillText('CENTRO DE SUPORTE BRASIL', 256, 185);
-
-    const logoTexture = new THREE.CanvasTexture(canvas);
-    logoTexture.colorSpace = THREE.SRGBColorSpace;
+    // Official SAP CENTRO DE SUPORTE White Wall Plaque (Pixel-Matched to Reference Screenshot)
+    const logoTexture = createSapCentroSuporteTexture();
     const logoMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(4.2, 2.1),
+      new THREE.PlaneGeometry(4.4, 2.2),
       new THREE.MeshBasicMaterial({ map: logoTexture })
     );
-    logoMesh.position.set(0, 2.8, -17.2);
+    logoMesh.position.set(0, 2.85, -17.2);
     this.scene.add(logoMesh);
 
     // Glass Turnstiles with collision
@@ -397,6 +399,157 @@ export class OfficeScene {
 
       this.collisionSystem.addBox(tx - 0.25, tx + 0.25, -5.6, -4.4, 'Catraca');
     });
+  }
+
+  /**
+   * Builds the signature Curved Royal Blue Sectional Sofa in the Lounge / Bottom-Left
+   * Exactly matching watermarked_img_6359214719321515695_2f580719.webp
+   */
+  private buildCurvedBlueSofaWithCollision(cx: number, cz: number) {
+    const group = new THREE.Group();
+
+    // Outer Circular Base Ring in Royal Blue
+    const sofaRadius = 2.4;
+    const sofaGeo = new THREE.CylinderGeometry(
+      sofaRadius,
+      sofaRadius,
+      0.48,
+      32,
+      1,
+      true,
+      0,
+      Math.PI * 1.5
+    );
+    const sofaMat = new THREE.MeshStandardMaterial({
+      color: 0x1d4ed8, // Royal Blue
+      roughness: 0.65,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+    });
+    const baseMesh = new THREE.Mesh(sofaGeo, sofaMat);
+    baseMesh.position.y = 0.24;
+    baseMesh.rotation.y = -Math.PI * 0.25;
+    baseMesh.castShadow = !this.isSoftwareGl;
+    group.add(baseMesh);
+
+    // Plush Padded Seat Ring
+    const seatGeo = new THREE.RingGeometry(1.5, 2.4, 32, 1, 0, Math.PI * 1.5);
+    seatGeo.rotateX(-Math.PI / 2);
+    const seatMat = new THREE.MeshStandardMaterial({
+      color: 0x2563eb,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+    });
+    const seatMesh = new THREE.Mesh(seatGeo, seatMat);
+    seatMesh.position.y = 0.48;
+    seatMesh.rotation.y = -Math.PI * 0.25;
+    seatMesh.receiveShadow = !this.isSoftwareGl;
+    group.add(seatMesh);
+
+    // Curved Outer Backrest
+    const backGeo = new THREE.CylinderGeometry(
+      2.45,
+      2.45,
+      0.65,
+      32,
+      1,
+      true,
+      0,
+      Math.PI * 1.5
+    );
+    const backMesh = new THREE.Mesh(backGeo, sofaMat);
+    backMesh.position.y = 0.78;
+    backMesh.rotation.y = -Math.PI * 0.25;
+    backMesh.castShadow = !this.isSoftwareGl;
+    group.add(backMesh);
+
+    // Low Round Dark Glass Coffee Table in Center
+    const tableTop = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.85, 0.85, 0.06, 24),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.3 })
+    );
+    tableTop.position.set(0, 0.38, 0);
+    tableTop.castShadow = !this.isSoftwareGl;
+    group.add(tableTop);
+
+    const tableBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.14, 0.36, 12),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.2 })
+    );
+    tableBase.position.set(0, 0.18, 0);
+    group.add(tableBase);
+
+    group.position.set(cx, 0, cz);
+    this.scene.add(group);
+
+    // Register Sofa Collision Box
+    this.collisionSystem.addBox(cx - 2.5, cx + 2.5, cz - 2.5, cz + 2.5, 'Sofá Circular do Lounge');
+  }
+
+  /**
+   * Builds Potted Plants in White Ceramic Planters across the office
+   * (Beside glass dividers, reception, and sofa matching reference screenshot)
+   */
+  private buildPottedPlants() {
+    const plantSpots: [number, number][] = [
+      [-14.5, 6],   // Left of circular sofa
+      [-7.5, 6],    // Right of circular sofa
+      [-4.2, -8],   // Left of reception desk
+      [4.2, -8],    // Right of reception desk
+      [-0.5, 4.5],  // Beside center glass partition
+      [-0.5, -0.5], // Between open space aisles
+      [-10.5, 4.5], // Far left cubicle edge
+      [5.5, -2],    // Outside Server Room door
+    ];
+
+    plantSpots.forEach(([px, pz]) => {
+      this.buildPottedPlant(px, pz);
+    });
+  }
+
+  private buildPottedPlant(x: number, z: number) {
+    const group = new THREE.Group();
+
+    // White ceramic planter pot
+    const pot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.22, 0.55, 16),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.05 })
+    );
+    pot.position.y = 0.275;
+    pot.castShadow = !this.isSoftwareGl;
+    group.add(pot);
+
+    // Soil
+    const soil = new THREE.Mesh(
+      new THREE.CircleGeometry(0.26, 16),
+      new THREE.MeshStandardMaterial({ color: 0x3f2e21, roughness: 0.9 })
+    );
+    soil.rotation.x = -Math.PI / 2;
+    soil.position.y = 0.54;
+    group.add(soil);
+
+    // Lush broad tropical leaves
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: 0x16a34a,
+      roughness: 0.45,
+      side: THREE.DoubleSide,
+    });
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const leafGeo = new THREE.ConeGeometry(0.18, 0.55, 6);
+      leafGeo.rotateZ(0.65);
+      const leaf = new THREE.Mesh(leafGeo, leafMat);
+      leaf.position.set(Math.cos(angle) * 0.12, 0.72, Math.sin(angle) * 0.12);
+      leaf.rotation.y = angle;
+      leaf.castShadow = !this.isSoftwareGl;
+      group.add(leaf);
+    }
+
+    group.position.set(x, 0, z);
+    this.scene.add(group);
+
+    // Plant collision
+    this.collisionSystem.addBox(x - 0.35, x + 0.35, z - 0.35, z + 0.35, 'Planta Decorativa');
   }
 
   private buildDetailedDesks() {
@@ -923,32 +1076,57 @@ export class OfficeScene {
 
   private createNPCSpeechBubble(hasTicket: boolean): THREE.Sprite {
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = 140;
+    canvas.height = 140;
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = hasTicket ? '#f59e0b' : '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(64, 60, 42, 0, Math.PI * 2);
-    ctx.fill();
+    // Rounded rectangle speech bubble with downward pointer
+    const bColor = hasTicket ? '#facc15' : '#ffffff';
+    const bBorder = hasTicket ? '#ca8a04' : '#94a3b8';
 
-    ctx.beginPath();
-    ctx.moveTo(50, 95);
-    ctx.lineTo(64, 115);
-    ctx.lineTo(78, 95);
-    ctx.fill();
+    ctx.fillStyle = bColor;
+    ctx.strokeStyle = bBorder;
+    ctx.lineWidth = 4;
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 50px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hasTicket ? '!' : '…', 64, 58);
+    // Balloon Body
+    ctx.beginPath();
+    ctx.roundRect(14, 14, 112, 84, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    // Downward pointer tail
+    ctx.beginPath();
+    ctx.moveTo(56, 98);
+    ctx.lineTo(70, 124);
+    ctx.lineTo(84, 98);
+    ctx.closePath();
+    ctx.fillStyle = bColor;
+    ctx.fill();
+    ctx.strokeStyle = bBorder;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Fill inner bridge to hide seam
+    ctx.fillStyle = bColor;
+    ctx.fillRect(54, 94, 32, 6);
+
+    // Content: bold black '!' for ticket alert, or three dots '···' for normal
+    ctx.fillStyle = '#0f172a';
+    if (hasTicket) {
+      ctx.font = 'bold 56px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', 70, 74);
+    } else {
+      ctx.font = 'bold 40px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('···', 70, 68);
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(0.75, 0.75, 1);
+    sprite.scale.set(0.85, 0.85, 1);
     return sprite;
   }
 
